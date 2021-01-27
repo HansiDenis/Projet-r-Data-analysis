@@ -1,0 +1,13 @@
+Pour bien executer le programme : 
+
+-extraire l'archive. Bien garder les scripts (resufoot.sh et test.sh) et les répertoires matchs et groupes avec respectivement tous les fichiers des matchs et des groupes dans le même dossier. 
+
+-se placer dans le dossier avec les scripts et les répertoires.
+
+-dans le terminal, afin de pouvoir executer les scripts
+chmod a+x resufoot.sh 
+chmod a+x test.sh  
+
+-execution de resufoot.sh : ./resufoot.sh -option -equipe/groupe
+
+-execution de test.sh : ./test.sh 

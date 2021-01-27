@@ -1,0 +1,193 @@
+---
+title: "Projet Statistique&R"
+author: ""
+output: html_document
+---
+
+### Sommaire
+
+1. Lien entre les dépenses dans l'éducation et le taux de chômage chez les jeunes de 15-24 ans
+2. Lien entre la croissance de la population et le taux de natalité
+
+### Packages
+
+```{r load-packages, message = FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(shiny)
+library(statsr)
+```
+
+### Données
+
+```{r load-data}
+wfb = read.csv('wfb2.csv')
+dim(wfb)
+#names(wfb)
+```
+
+
+### 1. Y a-t-il une corrélation entre les dépenses dans l'éducation et le taux de chômage chez les jeunes de 15-24 ans ?
+
+Pour répondre à la question, nous allons nous intéresser aux données suivantes:
+-dépenses dans l'éducation pour chaque pays
+-chômage 15-24 ans pour chaque pays
+
+```{r view}
+str(wfb$Education.expenditures)
+str(wfb$Unemployment..youth.ages.15.24)
+```
+
+Nous allons restreindre l'étude dans les pays où ces deux informations sont renseignées.
+
+```{r restriction}
+wfb_restreint <- wfb %>%
+filter(Education.expenditures != "NA",Unemployment..youth.ages.15.24 != "NA")
+dim(wfb_restreint)
+```
+
+<p>L'étude se limite à 119 pays<p>
+
+```{r summary expenditures}
+summary(wfb_restreint$Education.expenditures)
+```
+
+```{r summary unemployment}
+summary(wfb_restreint$Unemployment..youth.ages.15.24)
+```
+
+### Etude d'une possible corrélation via la régression linéaire
+
+```{r correlation}
+plot(wfb_restreint$Education.expenditures, wfb_restreint$Unemployment..youth.ages.15.24, lwd=0.3, title("Correlation entre les dépenses liées à l'éducation et le taux de chômage chez les 15-24 ans"))
+
+#Calcul des coefficients a et b
+xi=wfb_restreint$Education.expenditures
+yi=wfb_restreint$Unemployment..youth.ages.15.24
+xbar=mean(xi)
+ybar=mean(yi)
+a = cov(xi,yi)/var(xi)
+b = ybar - a*xbar
+a
+b
+
+#Equation de la droite
+y = a*xi+b
+
+#Calcul du coefficient lineaire
+RSS=sum((yi-y)^2)
+TSS=sum((yi-ybar)^2)
+
+coeff = 1-(RSS/TSS)
+coeff
+
+#Graphe
+leg=paste("y =",round(a,3),"x +",round(b,3))
+lines(y~wfb_restreint$Education.expenditures, type='l',col='red', lwd=3)
+legend(10,100,leg,col='red', lty=1:2,cex = 0.8)
+
+```
+
+#### Vérification avec les formules de R
+```{r check}
+model<-lm(Unemployment..youth.ages.15.24 ~ Education.expenditures, data = wfb)
+summary(model)
+```
+
+Nous retrouvons le même coefficient linéaire et les mêmes valeurs pour a et b.
+
+### Conclusion
+
+Nous obtenons un coefficient linéaire très proche de 0 (environ 0,006) : il n'y a pas de relation linéaire entre les deux variables. Nous avions pour hypothèse que, plus les dépenses liées à  l'éducation étaient élevées, plus le taux de chômage chez les jeunes de 15-24 ans serait faible. Finalement, cela ne semble pas être le cas. Cela est peut être du au fait qu'il y a plus de paramètres à prendre en compte. Déjà, l'unité des dépenses liées à l'éducation est un pourcentage du PIB. On pourrait penser que certains pays qui ont un PIB plus élevé ont un pourcentage plus faible de dépense qui ne veut pas pour autant dire qu'ils dépensent moins. On pourrait aussi penser que le taux de chômage est faible dans les pays en développement ou sous développés car ils n’ont pas d’assurance-chômage et que les niveaux de revenus sont relativement bas. Les résultats peuvent donc être faussés.
+
+Nous avons donc voulu essayer de montrer une corrélation plus évidente. 
+
+### 2. Corrélation entre le taux de naissance et le taux de croissance de la population
+
+Pour cette étude, nous allons regarder les données suivantes:
+-taux de naissance
+-taux de croissance de la population 
+
+Nous restreignions la base de données en gardant les pays où ces deux informations sont renseignées.
+
+```{r restriction2}
+wfb_restreint2 <- wfb %>%
+filter(Birth.rate != "NA",Population.growth.rate != "NA")
+dim(wfb_restreint2)
+```
+
+Notre étude se fait sur 224 pays 
+
+```{r summary birth rate}
+summary(wfb_restreint2$Birth.rate)
+```
+
+```{r summary population growth rate}
+summary(wfb_restreint2$Population.growth.rate)
+```
+
+```{r etude correlation}
+plot(wfb$Birth.rate, wfb$Population.growth.rate, lwd=0.5, title("Correlation entre le taux de naissance et le taux de croissance de la population"))
+#Calcul des coefficients a et b
+xi=wfb_restreint2$Birth.rate
+yi=wfb_restreint2$Population.growth.rate
+xbar=mean(xi)
+ybar=mean(yi)
+a = cov(xi,yi)/var(xi)
+a
+b = ybar - a*xbar
+b
+
+
+#Equation de la droite
+y = a*xi+b
+
+#Graphe
+leg=paste("y =",round(a,3),"x +",round(b,3))
+lines(y~wfb_restreint2$Birth.rate, type='l',col='red', lwd=3)
+legend(10,100,leg,col='red', lty=1:2,cex = 0.8)
+
+#Calcul du coefficient lineaire
+RSS=sum((yi-y)^2)
+TSS=sum((yi-ybar)^2)
+
+coeff = 1-(RSS/TSS)
+coeff
+```
+
+### Vérification avec R
+
+```{r check2}
+model<-lm(Population.growth.rate ~ Birth.rate , data = wfb)
+summary(model)
+```
+
+a, b et le coefficient linéaire sont corrects 
+
+### intervalle de confiance 
+
+```{r conf}
+modelpred <- predict(model,wfb_restreint2 , interval="prediction")
+intervallemin=modelpred[2]
+intervallemax=modelpred[3]
+?p
+intervallemin
+intervallemax
+
+erreur=(intervallemax-intervallemin)/2
+erreur
+
+plot(wfb_restreint2$Birth.rate, wfb_restreint2$Population.growth.rate, lwd=0.5, title("Correlation entre taux de naissance et croissance population"))
+
+leg =paste("y =",round(a,3),"x",round(b,3))
+lines(y~wfb_restreint2$Birth.rate, type='l',col='red', lwd=3)
+z=y+erreur
+zz=y-erreur
+lines(z~wfb_restreint2$Birth.rate, type='l',col='green', lwd=1)
+lines(zz~wfb_restreint2$Birth.rate, type='l',col='green', lwd=1)
+legend(10,100,leg,col='red', lty=1:2,cex = 0.8)
+```
+
+### Conclusion 
+
+Nous obtenons un coefficient linéaire d'environ 0.59. Comme plus le coefficient se rapproche de 1, plus les variables sont corrélées, ces deux variables semblent être corrélées. Sur le graphe, nous observons la pente de l'équation de la droite positive : plus il y a de naissance, plus le taux de la popolation augmente. 
